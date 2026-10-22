@@ -10,6 +10,10 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="author" content="Gabriel de Carvalho Santos">
 <link rel="icon" type="image/png" href="logo.png">
+<script>
+/* modo claro/escuro escolhido pelo usuário: aplicado antes de desenhar a página (sem "piscar") */
+try{ const t=localStorage.getItem("hospital_de_amor_tema"); if(t==="dark"||t==="light") document.documentElement.setAttribute("data-theme",t); }catch(e){}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <style>
@@ -175,6 +179,7 @@ tr.grp td .gc{font-weight:500;color:var(--sub);margin-left:6px}
 .b-atendido{background:var(--green-soft);color:var(--green)}
 .b-obito{background:var(--red-soft);color:var(--red)}
 .b-alert{background:var(--amber-soft);color:var(--amber)}
+.b-final{background:var(--line2);color:var(--ink2)}
 
 .obs-cell{max-width:220px;min-width:120px}
 .obs-txt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.4}
@@ -197,7 +202,10 @@ tr.grp td .gc{font-weight:500;color:var(--sub);margin-left:6px}
 .fsec:not(:first-child){margin-top:10px}
 .frow{display:grid;gap:12px}
 .frow.c12{grid-template-columns:1fr 2fr}.frow.c21{grid-template-columns:2fr 1fr}.frow.c11{grid-template-columns:1fr 1fr}
+.frow.c121{grid-template-columns:1fr 2fr 1fr}   /* CEP · Cidade · Estado */
 @media (max-width:560px){.frow.c12,.frow.c21,.frow.c11{grid-template-columns:1fr}}
+@media (max-width:640px){.frow.c121{grid-template-columns:1fr}}
+.phones{display:flex;flex-direction:column;gap:6px}   /* vários telefones na ficha */
 #f_obs{min-height:110px;resize:vertical;line-height:1.5}
 
 .datef{display:inline-flex;align-items:center;gap:6px;width:100%}
@@ -288,9 +296,9 @@ main{flex:1 0 auto}
 
 /* ---------- v3: perfis, auditoria, dashboard, alertas, importação ---------- */
 /* cores dos gráficos (paleta validada para daltonismo, claro e escuro) */
-:root{--viz-1:#2a78d6;--viz-ok:#1baf7a;--viz-red:#e34948;--viz-mute:#cbd5e1}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--viz-1:#3987e5;--viz-ok:#199e70;--viz-red:#e66767;--viz-mute:#334155}}
-:root[data-theme="dark"]{--viz-1:#3987e5;--viz-ok:#199e70;--viz-red:#e66767;--viz-mute:#334155}
+:root{--viz-1:#2a78d6;--viz-ok:#1baf7a;--viz-red:#e34948;--viz-mute:#cbd5e1;--viz-amber:#e0951f;--viz-purple:#8b5cf6}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--viz-1:#3987e5;--viz-ok:#199e70;--viz-red:#e66767;--viz-mute:#334155;--viz-amber:#eaa63d;--viz-purple:#a78bfa}}
+:root[data-theme="dark"]{--viz-1:#3987e5;--viz-ok:#199e70;--viz-red:#e66767;--viz-mute:#334155;--viz-amber:#eaa63d;--viz-purple:#a78bfa}
 .rolepill{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--bg);color:var(--sub);border:1px solid var(--line);white-space:nowrap}
 .rolepill.admin{background:var(--pink-soft);color:var(--pink);border-color:transparent}
 #errbar.ok{background:var(--green)}
@@ -367,6 +375,15 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
 .progress{height:8px;background:var(--line2);border-radius:99px;overflow:hidden;margin:10px 0 6px}
 .progress i{display:block;height:100%;background:var(--primary);width:0;transition:width .2s}
 
+/* ajuda com a senha */
+.ajsteps{margin:0 0 14px;padding-left:20px;font-size:13px;line-height:1.75;color:var(--ink2)}
+.ajcard{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-bottom:14px}
+.ajcard .av{width:40px;height:40px;flex:0 0 auto;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
+.ajcard .who{flex:1;min-width:160px}
+.ajcard .who b{display:block;font-size:14px;color:var(--ink)}
+.ajcard .who span{font-size:12px;color:var(--sub)}
+.ajcard .acts{display:flex;gap:8px;flex-wrap:wrap}
+
 /* ---------- Impressão ---------- */
 @media print{
   @page{size:A4 landscape;margin:10mm}
@@ -408,7 +425,7 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
     <div class="field"><label for="l_email">E-mail</label><input type="email" id="l_email" autocomplete="username" required></div>
     <div class="field"><label for="l_pass">Senha</label><input type="password" id="l_pass" autocomplete="current-password" required></div>
     <button class="btn" id="l_btn" type="submit">Entrar</button>
-    <button type="button" class="linkbtn forgot" onclick="doReset()">Esqueci minha senha</button>
+    <button type="button" class="linkbtn forgot" onclick="abrirAjudaSenha('esqueci')">Esqueci minha senha</button>
   </form>
   <form class="loginbox" id="pwForm" onsubmit="doNewPassword(event)" style="display:none">
     <div class="lbrand"><img src="logo.png" alt=""><div><h3 id="p_title">Criar nova senha</h3><div class="sub" id="p_sub"></div></div></div>
@@ -437,7 +454,8 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
     <header class="topbar noprint">
       <span class="sync warn" id="syncstate"><i></i><span class="stxt">Conectando…</span></span>
       <span class="user"><span class="avatar" id="u_avatar">?</span><span class="uemail" id="u_email"></span><span class="rolepill" id="u_role" style="display:none"></span></span>
-      <button class="btn ghost sm" onclick="showPwForm(false)" title="Alterar a minha senha"><svg class="i" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg><span class="hidem">Alterar senha</span></button>
+      <button class="btn ghost sm" onclick="abrirAjudaSenha('alterar')" title="Alterar a minha senha"><svg class="i" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></svg><span class="hidem">Alterar senha</span></button>
+      <button class="btn ghost sm" id="themeBtn" onclick="toggleTheme()" title="Alternar modo claro/escuro" aria-label="Alternar modo claro/escuro"><svg class="i" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
       <button class="btn ghost sm" onclick="doLogout()" title="Sair do sistema"><svg class="i" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Sair</button>
     </header>
     <main id="main"></main>
@@ -456,7 +474,8 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
         <div class="field"><label>ID do paciente</label><input id="f_pid" autocomplete="off" placeholder="Nº do prontuário / cadastro"></div>
         <div class="field"><label>Nome completo *</label><input id="f_name" autocomplete="off" placeholder="Nome do paciente"></div>
       </div>
-      <div class="frow c21">
+      <div class="frow c121">
+        <div class="field"><label for="f_cep">CEP <span id="cep_msg"></span></label><input id="f_cep" autocomplete="off" inputmode="numeric" placeholder="00000-000" oninput="onCepInput(this)" title="Digite o CEP: a cidade e o estado são preenchidos sozinhos"></div>
         <div class="field"><label>Cidade</label><input id="f_city" autocomplete="off" list="dl_cities" placeholder="Cidade de origem"></div>
         <div class="field"><label>Estado</label>
           <select id="f_estado"><option value="SE">Sergipe (SE)</option><option value="AL">Alagoas (AL)</option><option value="PE">Pernambuco (PE)</option><option value="BA">Bahia (BA)</option></select>
@@ -464,8 +483,8 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
       </div>
       <datalist id="dl_cities"></datalist>
       <div class="frow c11">
-        <div class="field"><label>Telefone / WhatsApp (com DDD)</label><input id="f_phone" autocomplete="off" inputmode="tel" placeholder="79999998888"></div>
-        <div class="field"><label>Status</label><select id="f_status"><option>Ativo</option><option>Atendido</option><option>Óbito</option></select></div>
+        <div class="field"><label for="f_phone">Telefone / WhatsApp (com DDD)</label><div class="phones" id="phoneList"></div></div>
+        <div class="field"><label>Status</label><select id="f_status"><option>Ativo</option><option>Atendido</option><option>Óbito</option><option>Em Triagem</option><option>Finalizado</option></select></div>
       </div>
       <div class="fsec">Agendamentos</div>
       <div id="agendList"></div>
@@ -498,6 +517,9 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
   <div class="modal narrow">
     <div class="mhead"><h3>Mensagem de WhatsApp</h3><button class="x" onclick="closeWa()" title="Fechar"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="mbody">
+      <div class="field" id="wa_phone_field" style="display:none"><label>Número</label>
+        <select id="wa_phone" onchange="updateWaLink()"></select>
+      </div>
       <div class="field" id="wa_ag_field" style="display:none"><label>Agendamento de referência</label>
         <select id="wa_agend" onchange="fillWaText()"></select>
       </div>
@@ -511,6 +533,14 @@ details.dtable td.num,details.dtable th.num{text-align:right;font-variant-numeri
       <div class="field" style="margin:0"><label>Texto</label><textarea id="wa_text" rows="6"></textarea></div>
     </div>
     <div class="mfoot"><span style="flex:1"></span><button class="btn ghost" onclick="closeWa()">Fechar</button><a class="btn" style="background:#1fa855;border-color:#1fa855" id="wa_send" target="_blank">Enviar no WhatsApp →</a></div>
+  </div>
+</div>
+
+<div class="modalbg" id="ajudabg" style="z-index:150">
+  <div class="modal narrow" role="dialog" aria-modal="true" aria-labelledby="aj_title">
+    <div class="mhead"><h3 id="aj_title">Ajuda com a senha</h3><button class="x" onclick="closeAjudaSenha()" title="Fechar"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="mbody" id="aj_body"></div>
+    <div class="mfoot"><span style="flex:1"></span><button class="btn ghost" onclick="closeAjudaSenha()">Fechar</button></div>
   </div>
 </div>
 
@@ -544,7 +574,11 @@ const ICONS={
  refresh:'<path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/>',
  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
- check:'<path d="M20 6 9 17l-5-5"/>'
+ check:'<path d="M20 6 9 17l-5-5"/>',
+ triage:'<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+ moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+ mail:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'
 };
 function ic(n){ return `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`; }
 
@@ -588,7 +622,7 @@ function rowToP(r){ return {id:r.id,data:{pid:r.pid||"",name:r.name||"",city:r.c
   createdBy:r.created_by_email||"",updatedBy:r.updated_by_email||"",_ver:r.updated_at||""}}; }
 function pToRow(d){
   const t=v=>(v??"").toString().trim();
-  return {pid:t(d.pid),name:t(d.name),city:t(d.city),estado:ESTADOS.some(e=>e[0]===d.estado)?d.estado:"SE",phone:t(d.phone).replace(/\D/g,""),agendamentos:agList(d),obs:t(d.obs),status:STATUS.includes(d.status)?d.status:"Ativo"};
+  return {pid:t(d.pid),name:t(d.name),city:t(d.city),estado:ESTADOS.some(e=>e[0]===d.estado)?d.estado:"SE",phone:phoneList(d.phone).join(", "),agendamentos:agList(d),obs:t(d.obs),status:STATUS.includes(d.status)?d.status:"Ativo"};
 }
 async function fetchAllPatients(){
   const out=[]; let total=null;
@@ -850,7 +884,9 @@ semAutocompletar(document.body);
 
 /* ================= UTILITÁRIOS ================= */
 const ESTADOS=[["SE","Sergipe"],["AL","Alagoas"],["PE","Pernambuco"],["BA","Bahia"]];
-const STATUS=["Ativo","Atendido","Óbito"];
+const STATUS=["Ativo","Atendido","Óbito","Em Triagem","Finalizado"];
+// "Em Triagem" aparece só na aba Triagem e "Óbito" só na aba Óbitos; Ativo, Atendido e Finalizado ficam na aba do estado
+const naAbaDoEstado=p=>p.status!=="Óbito"&&p.status!=="Em Triagem";
 let db=null, patients=[], activeTab="painel", editingId=null, editingVer=null, waPatient=null;
 
 function esc(s){return (s??"").toString().replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -866,7 +902,11 @@ function parseBR(s){
   return `${m[3]}-${m[2]}-${m[1]}`;
 }
 function maskDate(el){ let v=el.value.replace(/\D/g,"").slice(0,8); if(v.length>4) v=v.slice(0,2)+"/"+v.slice(2,4)+"/"+v.slice(4); else if(v.length>2) v=v.slice(0,2)+"/"+v.slice(2); el.value=v; el.classList.remove("invalid"); }
-function fmtPhone(p){ const d=(p||"").replace(/\D/g,""); if(d.length===11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if(d.length===10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return d; }
+/* Telefones: a coluna phone (texto) guarda um ou mais números separados por vírgula — "79999998888, 79988887777".
+   phoneList: texto → lista de números (só dígitos, sem repetidos). Aceita vírgula, ponto e vírgula, barra ou quebra de linha. */
+function phoneList(v){ const out=[]; String(v??"").split(/[,;\/|\n]+/).forEach(x=>{ const d=x.replace(/\D/g,""); if(d&&!out.includes(d)) out.push(d); }); return out; }
+function fmtPhone1(p){ const d=(p||"").replace(/\D/g,""); if(d.length===11) return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; if(d.length===10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return d; }
+function fmtPhone(p){ return phoneList(p).map(fmtPhone1).join(", "); }
 function daysUntil(dateStr){ if(!dateStr) return null; const t=new Date(); t.setHours(0,0,0,0); const d=new Date(dateStr+"T00:00:00"); return Math.round((d-t)/86400000); }
 function prazo(iso){ const n=daysUntil(iso); if(n===null) return ""; if(n===0) return "Hoje"; if(n===1) return "Amanhã"; if(n===-1) return "Ontem"; return n>0?`Em ${n} dias`:`Há ${-n} dias`; }
 const WEEK=["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
@@ -906,15 +946,15 @@ function pickDate(id,btn){
 }
 
 /* ================= ABAS =================
-   Todos: Painel, Dashboard, estados, Óbitos, Relatórios.
+   Todos: Painel, Dashboard, estados, Triagem, Óbitos, Relatórios.
    Só administrador: Cadastros, Usuários, Alertas, Importar planilha, Backup. */
 function renderTabs(){
-  const cnt=uf=>patients.filter(p=>p.estado===uf&&p.status!=="Óbito").length;
+  const cnt=uf=>patients.filter(p=>p.estado===uf&&naAbaDoEstado(p)).length;
   const btn=(id,label,icon,extra)=>`<button class="tab ${activeTab===id?'active':''}" onclick="setTab('${id}')">${icon}<span>${label}</span>${extra||""}</button>`;
   const alerts=patients.filter(hasAlert).length;
   let h=`<div class="grp">Visão geral</div>`+btn("painel","Painel",ic("grid"),alerts?`<span class="cnt" style="background:#b45309;color:#fff" title="Pacientes em alerta de logística">${alerts}</span>`:"")+btn("dashboard","Dashboard",ic("chart"));
   h+=`<div class="grp">Pacientes por estado</div>`+ESTADOS.map(([c,n])=>btn(c,n,`<span class="uf">${c}</span>`,`<span class="cnt">${cnt(c)}</span>`)).join("");
-  h+=`<div class="grp">Registros</div>`+btn("obitos","Óbitos",ic("bookmark"),`<span class="cnt">${patients.filter(p=>p.status==="Óbito").length}</span>`);
+  h+=`<div class="grp">Registros</div>`+btn("triagem","Triagem",ic("triage"),`<span class="cnt">${patients.filter(p=>p.status==="Em Triagem").length}</span>`)+btn("obitos","Óbitos",ic("bookmark"),`<span class="cnt">${patients.filter(p=>p.status==="Óbito").length}</span>`);
   h+=`<div class="grp">Gestão</div>`+btn("relatorios","Relatórios",ic("file"));
   if(isAdmin()) h+=`<div class="grp">Administração</div>`+btn("cadastros","Cadastros",ic("sliders"))+btn("usuarios","Usuários",ic("users"))+btn("alertas","Alertas",ic("bell"))+btn("importar","Importar planilha",ic("sheet"))+btn("backup","Backup",ic("db"));
   document.getElementById("tabs").innerHTML=h;
@@ -1095,7 +1135,7 @@ async function dashPaint(){
   const st=D.por_status||{}, sv=STATUS.map(s=>st[s]||0), stot=sv.reduce((a,b)=>a+b,0);
   $("ds_st_hint").textContent=DS.status?"— mostra todas as situações":"";
   $("ds_center").innerHTML=`<b>${nf(stot)}</b><span>paciente(s)</span>`;
-  const swc=["var(--viz-1)","var(--viz-ok)","var(--viz-red)"];
+  const swc=["var(--viz-1)","var(--viz-ok)","var(--viz-red)","var(--viz-amber)","var(--viz-purple)"];
   $("lg_status").innerHTML=STATUS.map((s,i)=>`<div class="row"><span class="sw" style="background:${swc[i]}"></span><span class="nm">${s}</span><b>${nf(sv[i])}</b><span class="pc">${pct(sv[i],stot)}</span></div>`).join("");
   // gráficos
   let C;
@@ -1106,7 +1146,7 @@ async function dashPaint(){
   }
   if(!$("dashroot")) return;
   $("dashroot").classList.remove("nochart");
-  const col={v1:cssVar("--viz-1"),ok:cssVar("--viz-ok"),red:cssVar("--viz-red"),mute:cssVar("--viz-mute"),surf:cssVar("--card"),ink:cssVar("--ink2"),sub:cssVar("--sub"),grid:cssVar("--line2"),axis:cssVar("--line")};
+  const col={v1:cssVar("--viz-1"),ok:cssVar("--viz-ok"),red:cssVar("--viz-red"),amber:cssVar("--viz-amber"),purple:cssVar("--viz-purple"),mute:cssVar("--viz-mute"),surf:cssVar("--card"),ink:cssVar("--ink2"),sub:cssVar("--sub"),grid:cssVar("--line2"),axis:cssVar("--line")};
   const font=cssVar("--font")||"Inter, sans-serif";
   C.defaults.font.family=font; C.defaults.font.size=12; C.defaults.color=col.sub;
   const tip={backgroundColor:"rgba(15,23,42,.92)",titleColor:"#fff",bodyColor:"#fff",bodyFont:{weight:"600"},padding:10,cornerRadius:8,displayColors:false};
@@ -1120,9 +1160,9 @@ async function dashPaint(){
       onClick:(e,els)=>{ const x=els.length&&esp[els[0].index]; if(x) dashVerPacientes(x.nome); },
       onHover:(e,els)=>{ if(e.native&&e.native.target) e.native.target.style.cursor=els.length?"pointer":"default"; }},
     plugins:[pluginValorNaPonta(col.sub,font)]});
-  // 2) situação: rosca com 3 fatias (separadas por 2px da cor do fundo)
+  // 2) situação: rosca com uma fatia por situação (separadas por 2px da cor do fundo)
   upsertChart("status","ch_status",{type:"doughnut",
-    data:{labels:STATUS,datasets:[{data:sv,backgroundColor:[col.v1,col.ok,col.red],borderColor:col.surf,borderWidth:2,hoverOffset:4}]},
+    data:{labels:STATUS,datasets:[{data:sv,backgroundColor:[col.v1,col.ok,col.red,col.amber,col.purple],borderColor:col.surf,borderWidth:2,hoverOffset:4}]},
     options:{maintainAspectRatio:false,animation:false,cutout:"64%",plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:c=>`${c.label}: ${nf(c.raw)} (${pct(c.raw,stot)})`}}}}});
   // 3) e 4) novos cadastros por dia e por semana: colunas, uma cor
   const colunas=(labels,vals,titulo,rotulo)=>({type:"bar",
@@ -1134,7 +1174,7 @@ async function dashPaint(){
   upsertChart("sem","ch_sem",colunas(sem.map(x=>fmtDate(x.s).slice(0,5)),sem.map(x=>x.n),i=>`Semana de ${fmtDate(sem[i].s)} a ${fmtDate(fimSem(sem[i].s))}`,"cadastro(s)"));
 }
 // tema claro/escuro do sistema mudou: redesenha com as cores certas
-try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ destroyCharts(); if(activeTab==="dashboard"&&DS.data) dashPaint(); }); }catch(e){}
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ renderThemeBtn(); destroyCharts(); if(activeTab==="dashboard"&&DS.data) dashPaint(); }); }catch(e){}
 /* ================= GRADE ESTILO PLANILHA (filtro por coluna + ordenação) ================= */
 const GRIDS={};
 function gridHTML(id){
@@ -1197,14 +1237,15 @@ function rowHTML(g,r){ return `<tr data-id="${esc(r.id||(r.p&&r.p.id)||"")}">${g
 
 function goToPatient(id){
   const p=patients.find(x=>x.id===id); if(!p) return;
-  const tab=p.status==="Óbito"?"obitos":(ESTADOS.some(e=>e[0]===p.estado)?p.estado:"SE");
+  const tab=p.status==="Óbito"?"obitos":p.status==="Em Triagem"?"triagem":(ESTADOS.some(e=>e[0]===p.estado)?p.estado:"SE");
   tabStates[tab]={f:{},sort:(tabStates[tab]&&tabStates[tab].sort)||{k:"name",dir:1}};
   setTab(tab);
   setTimeout(()=>{ const tr=document.querySelector(`#gb-tab tr[data-id="${id}"]`); if(tr){ tr.scrollIntoView({block:"center",behavior:"smooth"}); tr.classList.add("flash"); setTimeout(()=>tr.classList.remove("flash"),2500); } },60);
 }
 /* ================= ABAS DOS ESTADOS / ÓBITOS ================= */
 const tabStates={};
-const statusBadge=s=>`<span class="badge ${s==="Ativo"?"b-ativo":s==="Atendido"?"b-atendido":"b-obito"}">${esc(s)}</span>`;
+const STATUS_CLS={"Ativo":"b-ativo","Atendido":"b-atendido","Óbito":"b-obito","Em Triagem":"b-alert","Finalizado":"b-final"};
+const statusBadge=s=>`<span class="badge ${STATUS_CLS[s]||"b-final"}">${esc(s)}</span>`;
 function obsCell(p){ return p.obs?`<div class="obs-cell"><div class="obs-txt">${esc(p.obs)}</div><button class="obs-more noprint" onclick="openObs('${p.id}')">Ver completa →</button></div>`:'<span class="muted">—</span>'; }
 function patientCols(showUF){
   return [
@@ -1212,7 +1253,7 @@ function patientCols(showUF){
     {k:"name",label:"Paciente",f:"text",cls:"namecol",val:p=>p.name,cell:p=>`<a href="#" class="plink" onclick="openModal('${p.id}');return false">${esc(p.name)}</a>`},
     {k:"city",label:"Cidade",f:"select",val:p=>p.city||""},
     ...(showUF?[{k:"estado",label:"UF",f:"select",val:p=>p.estado||""}]:[]),
-    {k:"phone",label:"WhatsApp",f:"text",val:p=>fmtPhone(p.phone),cls:"nowrap"},
+    {k:"phone",label:"WhatsApp",f:"text",val:p=>phoneList(p.phone).map(fmtPhone1),cls:"nowrap"},
     {k:"date",label:"Data",f:"text",ph:"dd/mm/aaaa",val:p=>agList(p).map(a=>fmtDate(a.date)),sortv:p=>{const n=nextAg(p);return n?n.date:"";},cls:"nowrap",cell:p=>{const ags=agList(p); return ags.length?ags.map(a=>`<span class="ln">${fmtDate(a.date)||"—"}${p.status==="Ativo"&&emAlerta(a.date)?` <span class="badge b-alert" title="Alerta de logística — organizar transporte">${prazo(a.date)}</span>`:""}</span>`).join(""):"—";}},
     {k:"spec",label:"Especialidade",f:"select",val:p=>agList(p).map(a=>a.spec)},
     {k:"doctor",label:"Médico",f:"select",val:p=>agList(p).map(a=>a.doctor)},
@@ -1227,14 +1268,16 @@ function patientCols(showUF){
   ];
 }
 function stateHTML(tabId){
-  const isObitos=tabId==="obitos";
-  const rows=isObitos?patients.filter(p=>p.status==="Óbito"):patients.filter(p=>p.estado===tabId&&p.status!=="Óbito");
-  const title=isObitos?"Registro de óbitos":ESTADOS.find(e=>e[0]===tabId)[1];
+  const isObitos=tabId==="obitos", isTriagem=tabId==="triagem", isReg=isObitos||isTriagem;   // Óbitos e Triagem: pacientes de todos os estados
+  const rows=isObitos?patients.filter(p=>p.status==="Óbito"):isTriagem?patients.filter(p=>p.status==="Em Triagem"):patients.filter(p=>p.estado===tabId&&naAbaDoEstado(p));
+  const title=isObitos?"Registro de óbitos":isTriagem?"Triagem":ESTADOS.find(e=>e[0]===tabId)[1];
   tabStates[tabId]=tabStates[tabId]||{f:{},sort:{k:"name",dir:1}};
-  GRIDS.tab={cols:patientCols(isObitos),rows,state:tabStates[tabId]};
-  const desc=isObitos?`${rows.length} registro(s) · todos os estados`:`${rows.length} paciente(s) · ${rows.filter(p=>p.status==="Ativo").length} ativo(s) · ${rows.filter(p=>p.status==="Atendido").length} atendido(s)`;
-  const actions=`<button class="btn ghost" onclick="gridClear('tab')">${ic("filterx")} Limpar filtros</button><button class="btn ghost" onclick="printTab('${esc(title)}')">${ic("print")} Imprimir</button>${isObitos?"":`<button class="btn" onclick="openModal(null,'${tabId}')">${ic("plus")} Novo paciente</button>`}`;
-  return pageHead(isObitos?"Registros":"Pacientes por estado",title+(isObitos?"":` <span class="pill" style="font-size:12px;vertical-align:4px">${tabId}</span>`),desc,actions)+
+  GRIDS.tab={cols:patientCols(isReg),rows,state:tabStates[tabId]};
+  const nFin=rows.filter(p=>p.status==="Finalizado").length;
+  const desc=isObitos?`${rows.length} registro(s) · todos os estados`:isTriagem?`${rows.length} paciente(s) em triagem · todos os estados`:`${rows.length} paciente(s) · ${rows.filter(p=>p.status==="Ativo").length} ativo(s) · ${rows.filter(p=>p.status==="Atendido").length} atendido(s)${nFin?` · ${nFin} finalizado(s)`:""}`;
+  const novo=isObitos?"":`<button class="btn" onclick="openModal(null,'${isTriagem?"SE":tabId}'${isTriagem?",'Em Triagem'":""})">${ic("plus")} Novo paciente</button>`;   // na Triagem, a ficha nova já abre "Em Triagem"
+  const actions=`<button class="btn ghost" onclick="gridClear('tab')">${ic("filterx")} Limpar filtros</button><button class="btn ghost" onclick="printTab('${esc(title)}')">${ic("print")} Imprimir</button>${novo}`;
+  return pageHead(isReg?"Registros":"Pacientes por estado",title+(isReg?"":` <span class="pill" style="font-size:12px;vertical-align:4px">${tabId}</span>`),desc,actions)+
   `<div class="printonly small" id="tabPrintHead" style="margin-bottom:8px"></div>`+gridHTML("tab")+
   `<div class="small noprint">Use a linha de filtros abaixo dos títulos para filtrar cada coluna e clique no título para ordenar.</div>`;
 }
@@ -1259,7 +1302,7 @@ const RCOLS=[
   {k:"name",label:"Nome",f:"text",cls:"namecol",val:r=>r.p.name},
   {k:"city",label:"Cidade",f:"select",val:r=>r.p.city||""},
   {k:"estado",label:"UF",f:"select",val:r=>r.p.estado||""},
-  {k:"phone",label:"Telefone",f:"text",val:r=>fmtPhone(r.p.phone),cls:"nowrap"},
+  {k:"phone",label:"Telefone",f:"text",val:r=>phoneList(r.p.phone).map(fmtPhone1),cls:"nowrap"},
   {k:"date",label:"Data",f:"text",ph:"dd/mm/aaaa",val:r=>rAgs(r).map(a=>fmtDate(a.date)),sortv:r=>(rAgs(r).map(a=>a.date).filter(Boolean).sort()[0])||""},
   {k:"weekday",label:"Dia da semana",f:"select",val:r=>rAgs(r).map(a=>weekday(a.date))},
   {k:"prazo",label:"Prazo",f:"text",val:r=>rAgs(r).map(a=>prazo(a.date)),sortv:r=>(rAgs(r).map(a=>a.date).filter(Boolean).sort()[0])||""},
@@ -1393,9 +1436,12 @@ function renderReportSummary(rows){
   const pats=[...uniq.values()];
   const nAg=rows.reduce((n,r)=>n+rAgs(r).filter(a=>a.date||a.spec).length,0);
   const bySpec={}, byEst={}, byDoc={};
-  rows.forEach(r=>{ rAgs(r).forEach(a=>{ const k=a.spec||"(sem especialidade)"; bySpec[k]=bySpec[k]||{Ativo:0,Atendido:0,"Óbito":0,t:0}; bySpec[k][r.p.status]++; bySpec[k].t++; if(a.doctor){ byDoc[a.doctor]=(byDoc[a.doctor]||0)+1; } }); });
-  pats.forEach(p=>{ const k=p.estado||"—"; byEst[k]=byEst[k]||{Ativo:0,Atendido:0,"Óbito":0,t:0}; byEst[k][p.status]++; byEst[k].t++; });
-  const tbl=(title,obj,first)=>{ const e=Object.entries(obj).sort((a,b)=>b[1].t-a[1].t); return `<div class="section" style="margin:0"><h2>${title}</h2>${e.length?`<table class="sumtbl"><thead><tr><th>${first}</th><th class="num">Ativo</th><th class="num">Atendido</th><th class="num">Óbito</th><th class="num">Total</th></tr></thead><tbody>${e.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${v.Ativo}</td><td class="num">${v.Atendido}</td><td class="num">${v["Óbito"]}</td><td class="num"><b>${v.t}</b></td></tr>`).join("")}</tbody></table>`:'<div class="empty">Sem dados</div>'}</div>`; };
+  // contagem por situação; as colunas "Em Triagem" e "Finalizado" só aparecem na tabela quando há algum
+  const zero=()=>{ const o={t:0}; STATUS.forEach(s=>o[s]=0); return o; };
+  const soma=(o,s)=>{ if(s in o) o[s]++; o.t++; };
+  rows.forEach(r=>{ rAgs(r).forEach(a=>{ const k=a.spec||"(sem especialidade)"; bySpec[k]=bySpec[k]||zero(); soma(bySpec[k],r.p.status); if(a.doctor){ byDoc[a.doctor]=(byDoc[a.doctor]||0)+1; } }); });
+  pats.forEach(p=>{ const k=p.estado||"—"; byEst[k]=byEst[k]||zero(); soma(byEst[k],p.status); });
+  const tbl=(title,obj,first)=>{ const e=Object.entries(obj).sort((a,b)=>b[1].t-a[1].t); const sts=STATUS.filter((s,i)=>i<3||e.some(([,v])=>v[s])); return `<div class="section" style="margin:0"><h2>${title}</h2>${e.length?`<table class="sumtbl"><thead><tr><th>${first}</th>${sts.map(s=>`<th class="num">${s}</th>`).join("")}<th class="num">Total</th></tr></thead><tbody>${e.map(([k,v])=>`<tr><td>${esc(k)}</td>${sts.map(s=>`<td class="num">${v[s]}</td>`).join("")}<td class="num"><b>${v.t}</b></td></tr>`).join("")}</tbody></table>`:'<div class="empty">Sem dados</div>'}</div>`; };
   const docE=Object.entries(byDoc).sort((a,b)=>b[1]-a[1]);
   s.innerHTML=`
   <div class="grid">
@@ -1405,6 +1451,8 @@ function renderReportSummary(rows){
     <div class="kpi"><div class="l">Ativos</div><div class="n">${pats.filter(p=>p.status==="Ativo").length}</div></div>
     <div class="kpi ok"><div class="l">Atendidos</div><div class="n">${pats.filter(p=>p.status==="Atendido").length}</div></div>
     <div class="kpi death"><div class="l">Óbitos</div><div class="n">${pats.filter(p=>p.status==="Óbito").length}</div></div>
+    <div class="kpi alert"><div class="l">Em triagem</div><div class="n">${pats.filter(p=>p.status==="Em Triagem").length}</div></div>
+    <div class="kpi"><div class="l">Finalizados</div><div class="n">${pats.filter(p=>p.status==="Finalizado").length}</div></div>
   </div>
   <div class="three">
     ${tbl("Agendamentos por especialidade",bySpec,"Especialidade")}
@@ -1540,7 +1588,7 @@ function usuariosHTML(){
     <div class="section" style="margin:0"><h2>${ic("shield")} Perfis de acesso</h2>
       <div class="small" style="line-height:1.7"><b>Usuário padrão:</b> Painel, Dashboard e Relatórios; consulta, cadastra e edita pacientes (não exclui).<br>
       <b>Administrador:</b> tudo do usuário padrão + excluir pacientes, Cadastros (especialidades e médicos), Usuários, Alertas, Importar planilha e Backup.</div>
-      <div class="callout" style="margin:12px 0 0">${ic("info")}<div>Incluir aqui <b>libera o acesso</b>. A pessoa também precisa de um <b>login</b>: no Supabase, <b>Authentication → Users → Add user → Create new user</b>, com o mesmo e-mail e uma senha provisória (marque <i>Auto Confirm User</i>). Depois ela troca a senha em “Alterar senha”.</div></div>
+      <div class="callout" style="margin:12px 0 0">${ic("info")}<div>Incluir aqui <b>libera o acesso</b>. A pessoa também precisa de um <b>login</b>: no Supabase, <b>Authentication → Users → Add user → Create new user</b>, com o mesmo e-mail e uma senha provisória (marque <i>Auto Confirm User</i>). Se depois ela precisar trocar a senha, a troca é feita no Supabase (Authentication → Users) — no sistema, “Alterar senha” e “Esqueci minha senha” mostram o contato do desenvolvedor.</div></div>
     </div>
   </div>
   <div class="tablecard"><div class="tablewrap" style="max-height:none"><table class="utable"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Login</th><th>Último acesso</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>
@@ -1741,7 +1789,7 @@ function impFone(v){
   if(d.length>=12&&d.startsWith("55")) d=d.slice(2).replace(/^0+/,"");                                  // tira o +55
   return d;
 }
-function impStatus(v){ const n=norm(v).trim(); if(!n) return "Ativo"; if(/^ativ/.test(n)) return "Ativo"; if(/^(atendid|conclu|finaliz|alta)/.test(n)) return "Atendido"; if(/^(obito|falecid|morte|morto)/.test(n)) return "Óbito"; return ""; }
+function impStatus(v){ const n=norm(v).trim(); if(!n) return "Ativo"; if(/^ativ/.test(n)) return "Ativo"; if(/^(em\s+)?triag/.test(n)) return "Em Triagem"; if(/^finaliz/.test(n)) return "Finalizado"; if(/^(atendid|conclu|alta)/.test(n)) return "Atendido"; if(/^(obito|falecid|morte|morto)/.test(n)) return "Óbito"; return ""; }
 function impUF(v){ const n=norm(v).replace(/[^a-z]/g,""); return {se:"SE",sergipe:"SE",al:"AL",alagoas:"AL",pe:"PE",pernambuco:"PE",ba:"BA",bahia:"BA"}[n]||""; }
 
 // ---- prévia: o que vai acontecer com cada linha ----
@@ -1936,7 +1984,7 @@ function cancelNew(i,kind){ const a=modalAgendamentos[i]; if(kind==="spec"){ a._
 function addAgendField(){ modalAgendamentos.push({date:"",spec:"",doctor:""}); renderAgendFields(); }
 function removeAgendField(i){ if(modalAgendamentos.length<=1){ modalAgendamentos=[{date:"",spec:"",doctor:""}]; } else modalAgendamentos.splice(i,1); renderAgendFields(); }
 
-function openModal(id,defaultEstado){
+function openModal(id,defaultEstado,defaultStatus){   // defaultStatus: ficha nova já com essa situação (ex.: "Em Triagem")
   editingId=id;
   const p=id?patients.find(x=>x.id===id):null;
   editingVer=p?(p._ver||null):null;
@@ -1945,11 +1993,12 @@ function openModal(id,defaultEstado){
   document.getElementById("f_name").value=p?p.name:"";
   document.getElementById("f_city").value=p?p.city:"";
   document.getElementById("f_estado").value=p?p.estado:(defaultEstado&&ESTADOS.some(e=>e[0]===defaultEstado)?defaultEstado:"SE");
-  document.getElementById("f_phone").value=p?p.phone:"";
+  modalPhones=p?phoneList(p.phone):[]; renderPhoneFields();
+  resetCep();
   modalAgendamentos=p?agList(p):[{date:"",spec:"",doctor:""}];
   renderAgendFields();
   document.getElementById("f_obs").value=p?(p.obs||""):"";
-  document.getElementById("f_status").value=p?p.status:"Ativo";
+  document.getElementById("f_status").value=p?p.status:(STATUS.includes(defaultStatus)?defaultStatus:"Ativo");
   document.getElementById("delBtn").style.display=p&&isAdmin()?"inline-flex":"none";   // excluir: só administrador
   // auditoria: quando foi cadastrado e quem fez a última alteração
   document.getElementById("f_audit").innerHTML=p?[
@@ -1958,7 +2007,7 @@ function openModal(id,defaultEstado){
   document.getElementById("ag_hint").textContent=isAdmin()?"":"Especialidade ou médico fora da lista? Peça a um administrador para cadastrar em Administração → Cadastros.";
   document.getElementById("modalbg").classList.add("show");
 }
-function closeModal(){ document.getElementById("modalbg").classList.remove("show"); editingId=null; editingVer=null; }
+function closeModal(){ document.getElementById("modalbg").classList.remove("show"); editingId=null; editingVer=null; resetCep(); }
 function openObs(id){
   const p=patients.find(x=>x.id===id); if(!p) return;
   document.getElementById("obs_who").textContent=(p.pid?"ID "+p.pid+" · ":"")+p.name;
@@ -1979,12 +2028,15 @@ async function savePatient(){
     if(a._newDoc&&doctor) doctor=pick(cad.doctors.map(d=>d.name),doctor);
     return {date:a.date||"",spec,doctor,_ns:a._newSpec,_nd:a._newDoc};
   }).filter(a=>a.date||a.spec||a.doctor);
+  const fones=phoneList(modalPhones.join(","));
+  const grudado=fones.find(f=>f.length>13);   // mais de 13 dígitos = dois números escritos juntos, sem vírgula
+  if(grudado){ alert(`O número ${grudado} tem ${grudado.length} dígitos — parecem dois telefones juntos.\n\nUse o botão + para pôr cada número no seu campo (ou separe-os com vírgula).`); return; }
   const data={
     pid:document.getElementById("f_pid").value.trim(),
     name:document.getElementById("f_name").value.trim(),
     city:document.getElementById("f_city").value.trim(),
     estado:document.getElementById("f_estado").value,
-    phone:document.getElementById("f_phone").value.replace(/\D/g,""),
+    phone:fones.join(", "),
     agendamentos:agendamentos.map(({date,spec,doctor})=>({date,spec,doctor})),
     obs:document.getElementById("f_obs").value.trim(),
     status:document.getElementById("f_status").value
@@ -2012,6 +2064,10 @@ async function deletePatient(){
 /* ================= WHATSAPP ================= */
 function openWa(id){
   waPatient=patients.find(x=>x.id===id);
+  // vários números: escolhe para qual enviar (com um só, o campo fica escondido)
+  const fones=phoneList(waPatient.phone);
+  document.getElementById("wa_phone").innerHTML=fones.map(f=>`<option value="${f}">${esc(fmtPhone1(f))}</option>`).join("");
+  document.getElementById("wa_phone_field").style.display=fones.length>1?"block":"none";
   const ags=agList(waPatient);
   const sel=document.getElementById("wa_agend"), field=document.getElementById("wa_ag_field");
   if(ags.length>1){ field.style.display="block"; sel.innerHTML=ags.map((a,i)=>`<option value="${i}">${esc(agLabel(a))}</option>`).join(""); }
@@ -2037,15 +2093,131 @@ function fillWaText(){
 }
 document.addEventListener("input",e=>{ if(e.target.id==="wa_text") updateWaLink(); });
 function updateWaLink(){
-  const phone=(waPatient?.phone||"").replace(/\D/g,"");
+  const phone=(document.getElementById("wa_phone").value||"").replace(/\D/g,"");   // número escolhido (o único, se houver só um)
   const full=phone.length<=11?"55"+phone:phone;
   document.getElementById("wa_send").href=`https://wa.me/${full}?text=${encodeURIComponent(document.getElementById("wa_text").value)}`;
 }
 
+/* ================= AJUDA COM A SENHA =================
+   "Esqueci minha senha" (tela de entrada) e "Alterar senha" (topo) abrem esta janela, que orienta
+   a pessoa a falar com o desenvolvedor. PREENCHA O CONTATO ABAIXO:
+   whatsapp com DDD, só números (ex.: "79999998888"); campo vazio = o botão correspondente não aparece.
+   O link de recuperação enviado pelo Supabase continua funcionando (abre a tela "Criar nova senha"). */
+const DEV_CONTATO={nome:"Gabriel de Carvalho Santos",whatsapp:"",email:""};
+function abrirAjudaSenha(tipo){
+  const esqueci=tipo!=="alterar";
+  const email=esqueci?(document.getElementById("l_email").value||"").trim():((perfil&&perfil.email)||"");
+  const nome=!esqueci&&perfil&&perfil.nome?perfil.nome:"";
+  const dev=DEV_CONTATO, primeiro=(dev.nome||"").trim().split(/\s+/)[0]||"";
+  const fone=(dev.whatsapp||"").replace(/\D/g,""), mail=(dev.email||"").trim();
+  const sistema="Gestão Logística e Atendimento (Hospital de Amor)";
+  // mensagem já escrita, que a pessoa só confere e envia
+  const msg=(esqueci?`Olá${primeiro?", "+primeiro:""}! Esqueci a minha senha do sistema ${sistema} e preciso recuperar o acesso.`
+                    :`Olá${primeiro?", "+primeiro:""}! Quero trocar a minha senha do sistema ${sistema}.`)
+    +`\n\nNome completo: ${nome}\nE-mail de acesso: ${email}`;
+  const waHref=fone?`https://wa.me/${fone.length<=11?"55"+fone:fone}?text=${encodeURIComponent(msg)}`:"";
+  const mailHref=mail?`mailto:${mail}?subject=${encodeURIComponent((esqueci?"Esqueci minha senha":"Troca de senha")+" — Gestão Logística e Atendimento")}&body=${encodeURIComponent(msg)}`:"";
+  const temContato=!!(waHref||mailHref);
+  const contatos=[fone?fmtPhone1(fone):"",mail].filter(Boolean).join(" · ");
+  document.getElementById("aj_title").textContent=esqueci?"Esqueci minha senha":"Alterar senha";
+  document.getElementById("aj_body").innerHTML=`
+    <div class="callout">${ic("shield")}<div><b>Por segurança, ${esqueci?"a recuperação":"a troca"} de senha é feita pelo desenvolvedor do sistema</b>, que confirma o pedido antes de liberar o novo acesso.</div></div>
+    <div class="fsec">Como fazer</div>
+    <ol class="ajsteps">
+      <li>Fale com o desenvolvedor ${temContato?"por um dos botões abaixo":"(ou procure o administrador do sistema)"}.</li>
+      <li>${esqueci?"Informe o seu nome completo e o e-mail que você usa para entrar no sistema.":`Confirme o seu e-mail de acesso${email?`: <b>${esc(email)}</b>`:""}.`}</li>
+      <li>Ele redefine o seu acesso e orienta você sobre a nova senha.</li>
+    </ol>
+    <div class="fsec">Contato do desenvolvedor</div>
+    <div class="ajcard"><span class="av">${esc(((dev.nome||"?").trim()[0]||"?").toUpperCase())}</span>
+      <div class="who"><b>${esc(dev.nome||"Desenvolvedor")}</b><span>Desenvolvedor do sistema${contatos?" · "+esc(contatos):""}</span></div>
+      ${temContato?`<div class="acts">${waHref?`<a class="btn wa sm" href="${esc(waHref)}" target="_blank" rel="noopener">${ic("msg")} WhatsApp</a>`:""}${mailHref?`<a class="btn ghost sm" href="${esc(mailHref)}">${ic("mail")} E-mail</a>`:""}</div>`:""}
+    </div>
+    ${temContato?"":`<div class="callout warn">${ic("info")}<div>O contato do desenvolvedor ainda não foi cadastrado no sistema. Procure o administrador.</div></div>`}
+    <div class="callout warn" style="margin:0">${ic("alert")}<div><b>Não envie a sua senha</b> por WhatsApp ou e-mail — ela não é necessária para redefinir o acesso.</div></div>`;
+  document.getElementById("ajudabg").classList.add("show");
+}
+function closeAjudaSenha(){ const b=document.getElementById("ajudabg"); if(b) b.classList.remove("show"); }
+
+/* ================= CEP (ViaCEP) =================
+   Ao completar os 8 números, consulta https://viacep.com.br e preenche a cidade (nome oficial)
+   e o estado — se for SE, AL, PE ou BA. Fora desses, a cidade é preenchida e o estado fica para escolher.
+   O CEP só ajuda no preenchimento: não é gravado (a tabela patients não tem coluna de CEP). */
+const CEP={ctrl:null,ultimo:""};
+function cepMsg(txt,cls){ const e=document.getElementById("cep_msg"); if(!e) return; e.textContent=txt?"· "+txt:""; e.className=cls||"small"; }
+function cepCancela(){ if(CEP.ctrl){ const c=CEP.ctrl; CEP.ctrl=null; c.abort(); } }
+function resetCep(){ cepCancela(); CEP.ultimo=""; const el=document.getElementById("f_cep"); if(el){ el.value=""; el.classList.remove("invalid"); } cepMsg(""); }
+function onCepInput(el){
+  const d=el.value.replace(/\D/g,"").slice(0,8);
+  el.value=d.length>5?d.slice(0,5)+"-"+d.slice(5):d;
+  el.classList.remove("invalid");
+  if(d.length<8){ cepCancela(); CEP.ultimo=""; cepMsg(""); return; }
+  if(d!==CEP.ultimo) buscarCep(d);          // o mesmo CEP não é consultado duas vezes seguidas
+}
+async function buscarCep(cep){
+  cepCancela();
+  const ctrl=new AbortController(); CEP.ctrl=ctrl; CEP.ultimo=cep;
+  const limite=setTimeout(()=>ctrl.abort(),8000);   // sem resposta em 8 s: desiste
+  cepMsg("buscando…","small");
+  try{
+    const r=await fetch("https://viacep.com.br/ws/"+cep+"/json/",{signal:ctrl.signal});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const j=await r.json();
+    if(CEP.ctrl!==ctrl) return;              // outro CEP foi digitado (ou a ficha foi fechada) nesse meio-tempo
+    if(!j||j.erro||!j.localidade){ cepMsg("não encontrado","err-t"); const el=document.getElementById("f_cep"); if(el) el.classList.add("invalid"); return; }
+    const cidade=String(j.localidade).trim(), uf=String(j.uf||"").trim().toUpperCase();
+    document.getElementById("f_city").value=cidade;
+    if(ESTADOS.some(e=>e[0]===uf)){ document.getElementById("f_estado").value=uf; cepMsg("✓ encontrado","ok-t"); }
+    else { cepMsg("UF "+uf,"warn-t"); showErr(`CEP de ${cidade}/${uf}: esse estado não está na lista do sistema. A cidade foi preenchida — escolha o estado manualmente.`); }
+  }catch(e){
+    if(CEP.ctrl!==ctrl) return;
+    CEP.ultimo="";                           // permite tentar de novo
+    cepMsg(e&&e.name==="AbortError"?"sem resposta":"falha na consulta","err-t");
+    showErr("Não foi possível consultar o CEP agora. Preencha a cidade e o estado manualmente.");
+  }finally{ clearTimeout(limite); if(CEP.ctrl===ctrl) CEP.ctrl=null; }
+}
+
+/* ================= TELEFONES DA FICHA (vários números) =================
+   Cada número tem o seu campo; o "+" acrescenta outro. Ao salvar, vira um texto só: "79999998888, 79988887777". */
+let modalPhones=[""];
+function renderPhoneFields(){
+  if(!modalPhones.length) modalPhones=[""];
+  document.getElementById("phoneList").innerHTML=modalPhones.map((v,i)=>`<span class="datef"><input id="${i?"f_phone_"+i:"f_phone"}" inputmode="tel" placeholder="${i?"Outro número com DDD":"79999998888"}" value="${esc(v)}" oninput="modalPhones[${i}]=this.value">${i
+    ?`<button type="button" class="calbtn" title="Remover este número" aria-label="Remover este número" onclick="removePhoneField(${i})">${ic("trash")}</button>`
+    :`<button type="button" class="calbtn" title="Adicionar outro número" aria-label="Adicionar outro número" onclick="addPhoneField()">${ic("plus")}</button>`}</span>`).join("");
+}
+function addPhoneField(){ modalPhones.push(""); renderPhoneFields(); const el=document.getElementById("f_phone_"+(modalPhones.length-1)); if(el) el.focus(); }
+function removePhoneField(i){ modalPhones.splice(i,1); renderPhoneFields(); }
+
+/* ================= MODO CLARO / ESCURO =================
+   O botão do topo alterna data-theme="light"/"dark" na tag <html>. A escolha fica salva neste
+   navegador (localStorage) e é aplicada logo no início da página (script no <head>).
+   Enquanto a pessoa não escolher, o sistema segue o modo do computador/celular. */
+const TEMA_KEY="hospital_de_amor_tema";
+function temaAtual(){
+  const t=document.documentElement.getAttribute("data-theme");
+  if(t==="dark"||t==="light") return t;
+  try{ return matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"; }catch(e){ return "light"; }
+}
+function renderThemeBtn(){
+  const b=document.getElementById("themeBtn"); if(!b) return;
+  const escuro=temaAtual()==="dark";
+  b.innerHTML=ic(escuro?"sun":"moon");
+  b.title=escuro?"Mudar para o modo claro":"Mudar para o modo escuro"; b.setAttribute("aria-label",b.title);
+}
+function toggleTheme(){
+  const novo=temaAtual()==="dark"?"light":"dark";
+  document.documentElement.setAttribute("data-theme",novo);
+  try{ localStorage.setItem(TEMA_KEY,novo); }catch(e){}
+  renderThemeBtn();
+  destroyCharts(); if(activeTab==="dashboard"&&DS.data) dashPaint();   // gráficos com as cores do novo tema
+}
+renderThemeBtn();
+
 /* ================= INÍCIO ================= */
 document.getElementById("saveBtn").onclick=savePatient;
 document.getElementById("delBtn").onclick=deletePatient;
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeObs(); closeWa(); } });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeObs(); closeWa(); closeAjudaSenha(); } });
 /* ================= LOGIN / SESSÃO ================= */
 let started=false, recovering=/type=recovery/.test(location.hash);
 const $id=id=>document.getElementById(id);
